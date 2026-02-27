@@ -116,8 +116,3 @@ Projekt järgib järjepidevat failistruktuuri, selgeid nimesid ja kommentaare. K
 3. Loo admin: `node backend/create-admin.js admin admin123`
 4. Käivita backend: `npm run dev`
 5. Käivita frontend: `cd frontend && npm start`
-
-## Avalik URL
-Lisa siia, kui rakendus on üles laetud (nt https://bookbarber.example.com)
-
-Lisainfo: Vaata kausta .github/copilot-instructions.md
