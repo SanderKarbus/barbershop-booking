@@ -113,10 +113,10 @@
       document.getElementById('noData').style.display = 'none';
 
       try {
-        const url = new URL(`${API}/admin/bookings`);
-        if (date) url.searchParams.set('date', date);
+        let url = `${API}/admin/bookings`;
+        if (date) url += `?date=${encodeURIComponent(date)}`;
         
-        const res = await fetch(url.toString(), {
+        const res = await fetch(url, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
