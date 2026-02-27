@@ -5,17 +5,14 @@ import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import BookingForm from './components/BookingForm';
-import AdminLogin from './components/AdminLogin';
-import AdminBookings from './components/AdminBookings';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 
 function App() {
-  const [adminToken, setAdminToken] = useState(null);
-  const [adminMode, setAdminMode] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
+  const [adminToken, setAdminToken] = useState(null);
 
   const theme = createTheme({
     palette: {
@@ -67,18 +64,7 @@ function App() {
                 Broneeri aeg juuksurile
               </Typography>
               <BookingForm darkMode={darkMode} />
-              <Box sx={{ mt: 3, textAlign: 'center' }}>
-                <Button variant="text" onClick={() => setAdminMode(true)}>
-                  Admini vaade
-                </Button>
-              </Box>
             </>
-          )}
-          {adminMode && !adminToken && (
-            <AdminLogin onLogin={token => { setAdminToken(token); setAdminMode(false); }} />
-          )}
-          {adminToken && (
-            <AdminBookings token={adminToken} onLogout={() => setAdminToken(null)} />
           )}
         </Box>
       </Container>

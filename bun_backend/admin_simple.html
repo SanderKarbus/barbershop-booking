@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Dream Barber</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h1 { color: #333; margin-bottom: 20px; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 15px; }
+    .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+    input[type="date"] { padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+    button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    button:hover { background: #0056b3; }
+    button.logout { background: #dc3545; }
+    button.logout:hover { background: #c82333; }
+    button.delete { background: #dc3545; padding: 4px 8px; font-size: 12px; }
+    button.delete:hover { background: #c82333; }
+    .error { color: #dc3545; padding: 10px; background: #f8d7da; border-radius: 4px; margin-bottom: 10px; border: 1px solid #f5c6cb; }
+    .success { color: #155724; padding: 10px; background: #d4edda; border-radius: 4px; margin-bottom: 10px; border: 1px solid #c3e6cb; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6; font-weight: bold; }
+    td { padding: 12px; border-bottom: 1px solid #dee2e6; }
+    tr:hover { background: #f8f9fa; }
+    .no-data { text-align: center; padding: 40px; color: #999; }
+    .loading { text-align: center; padding: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Dream Barber - Admin Panel</h1>
+      <button class="logout" onclick="logout()">Logi välja</button>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="controls">
+      <input type="date" id="dateFilter" onchange="fetchBookings()">
+      <button onclick="fetchBookings()">Värskenda</button>
+    </div>
+
+    <div id="loading" class="loading" style="display: none;">Laadimas...</div>
+    <table id="bookingsTable" style="display: none;">
+      <thead>
+        <tr>
+          <th>ID (debug)</th>
+          <th>Kuupäev</th>
+          <th>Aeg</th>
+          <th>Juuksur</th>
+          <th>Kliendi nimi</th>
+          <th>Telefon</th>
+          <th>Email</th>
+          <th>Lisainfo</th>
+          <th>Kustuta</th>
+        </tr>
+      </thead>
+      <tbody id="bookingsBody"></tbody>
+    </table>
+    <div id="noData" class="no-data">Broneeringuid ei leitud</div>
+  </div>
+
+  <script>
+    const API = 'http://localhost:3001/api';
+    let token = localStorage.getItem('adminToken');
+
+    if (!token) {
+      // Simple login form
+      document.body.innerHTML = `
+        <div class="container">
+          <div class="header"><h1>Dream Barber - Admin</h1></div>
+          <form onsubmit="login(event)" style="max-width: 300px; margin: 50px auto;">
+            <h2 style="margin-bottom: 20px;">Logi sisse</h2>
+            <input type="text" id="username" placeholder="Kasutajanimi" style="width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;" required>
+            <input type="password" id="password" placeholder="Parool" style="width: 100%; padding: 10px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 4px;" required>
+            <button type="submit" style="width: 100%;">Sisse</button>
+          </form>
+        </div>
+      `;
+    } else {
+      fetchBookings();
+    }
+
+    async function login(e) {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      try {
+        const res = await fetch(`${API}/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          localStorage.setItem('adminToken', data.token);
+          location.reload();
+        } else {
+          showMessage('Valitud kredentsiaalid', 'error');
+        }
+      } catch (e) {
+        showMessage('Viga: ' + e.message, 'error');
+      }
+    }
+
+    async function fetchBookings() {
+      const date = document.getElementById('dateFilter')?.value || '';
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('bookingsTable').style.display = 'none';
+      document.getElementById('noData').style.display = 'none';
+
+      try {
+        const url = new URL(`${API}/admin/bookings`);
+        if (date) url.searchParams.set('date', date);
+        
+        const res = await fetch(url.toString(), {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) throw new Error('Auth failed');
+        
+        const bookings = await res.json();
+        const tbody = document.getElementById('bookingsBody');
+        tbody.innerHTML = '';
+
+        if (bookings.length === 0) {
+          document.getElementById('noData').style.display = 'block';
+        } else {
+          bookings.forEach(b => {
+            const row = `<tr>
+              <td style="font-size: 11px; color: #999; font-family: monospace;">${b.id.substring(0, 8)}...</td>
+              <td>${b.date}</td>
+              <td>${b.time}</td>
+              <td>${b.hairdresser_name || 'N/A'}</td>
+              <td>${b.client_name}</td>
+              <td>${b.client_phone}</td>
+              <td>${b.client_email}</td>
+              <td>${b.extra_info || '-'}</td>
+              <td><button class="delete" onclick="deleteBooking('${b.id}', '${b.client_name}')">🗑</button></td>
+            </tr>`;
+            tbody.innerHTML += row;
+          });
+          document.getElementById('bookingsTable').style.display = 'table';
+        }
+      } catch (e) {
+        showMessage('Viga: ' + e.message, 'error');
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+      }
+    }
+
+    async function deleteBooking(id, name) {
+      if (!confirm(`Kas soovid kustutada ${name} broneeringu?`)) return;
+      
+      try {
+        console.log('🗑 KUSTUTAMISE PÄRING ID:', id);
+        const res = await fetch(`${API}/admin/booking`, {
+          method: 'DELETE',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showMessage('Broneering kustutatud ✓', 'success');
+          setTimeout(fetchBookings, 500);
+        } else {
+          showMessage('Viga: ' + (data.error || 'Tundmatu viga'), 'error');
+        }
+      } catch (e) {
+        showMessage('Viga: ' + e.message, 'error');
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('adminToken');
+      location.reload();
+    }
+
+    function showMessage(msg, type) {
+      const div = document.getElementById('message');
+      div.innerHTML = `<div class="${type}">${msg}</div>`;
+      setTimeout(() => { div.innerHTML = ''; }, 5000);
+    }
+  </script>
+</body>
+</html>

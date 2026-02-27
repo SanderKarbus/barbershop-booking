@@ -27,10 +27,11 @@ export default function AdminBookings({ token, onLogout }) {
     // eslint-disable-next-line
   }, [date]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (booking) => {
     if (!window.confirm('Kas oled kindel, et soovid selle broneeringu kustutada?')) return;
+    console.log('FRONTEND KUSTUTAMISE ID:', booking.id);
     try {
-      await axios.delete(`${API}/admin/booking/${id}`, {
+      await axios.post(`${API}/admin/delete-booking`, { id: booking.id }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchBookings();
@@ -70,8 +71,8 @@ export default function AdminBookings({ token, onLogout }) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {bookings.map(b => (
-              <TableRow key={b.id}>
+            {bookings.map((b, idx) => (
+              <TableRow key={b.created_at || idx}>
                 <TableCell>{b.date}</TableCell>
                 <TableCell>{b.time}</TableCell>
                 <TableCell>{b.hairdresser_name}</TableCell>
@@ -80,7 +81,7 @@ export default function AdminBookings({ token, onLogout }) {
                 <TableCell>{b.client_email}</TableCell>
                 <TableCell>{b.extra_info}</TableCell>
                 <TableCell>
-                  <IconButton color="error" onClick={() => handleDelete(b.id)} size="small">
+                  <IconButton color="error" onClick={() => handleDelete(b)} size="small">
                     <DeleteIcon />
                   </IconButton>
                 </TableCell>

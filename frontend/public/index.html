@@ -12,5 +12,21 @@
     <div id="barber-bg" style="position:fixed; inset:0; z-index:0; background:url('https://d375139ucebi94.cloudfront.net/region2/pl/65692/biz_photo/d7b7b5bbe6044d9dbab65cda215f74-barbershop-house-66-biz-photo-e7fe2579699f4acc8b2c5286ca1522-booksy.jpeg?size=640x427') center center/cover no-repeat; filter: blur(8px) brightness(0.7);"></div>
     <noscript>Vabandame, see rakendus vajab JavaScripti.</noscript>
     <div id="root" style="position:relative; z-index:1;"></div>
+    <script>
+  function removeAdminButtons() {
+    const nodes = document.querySelectorAll('button, a');
+    nodes.forEach(el => {
+      const txt = (el.textContent || '').trim().toLowerCase();
+      if (txt.includes('admini vaade')) {
+        el.remove();
+      }
+    });
+  }
+  // Esmalaadimisel
+  removeAdminButtons();
+  // Kui React lisab hiljem dünaamiliselt
+  const mo = new MutationObserver(removeAdminButtons);
+  mo.observe(document.body, { childList: true, subtree: true });
+</script>
   </body>
 </html>
