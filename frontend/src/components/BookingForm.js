@@ -4,7 +4,7 @@ import {
   Box, Button, MenuItem, TextField, Typography, Alert, CircularProgress, ToggleButton, ToggleButtonGroup, Paper
 } from '@mui/material';
 
-const API = 'http://localhost:3001/api';
+const API = '/api';
 
 export default function BookingForm({ darkMode }) {
   const [hairdressers, setHairdressers] = useState([]);

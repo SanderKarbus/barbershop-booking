@@ -5,7 +5,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const API = 'http://localhost:3001/api';
+const API = '/api';
 
 export default function AdminBookings({ token, onLogout }) {
   const [date, setDate] = useState('');

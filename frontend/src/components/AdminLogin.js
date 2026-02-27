@@ -4,7 +4,7 @@ import {
   Box, Button, TextField, Typography, Alert, CircularProgress
 } from '@mui/material';
 
-const API = 'http://localhost:3001/api';
+const API = '/api';
 
 export default function AdminLogin({ onLogin }) {
   const [form, setForm] = useState({ username: '', password: '' });
