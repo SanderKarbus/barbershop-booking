@@ -1,118 +1,85 @@
+# Dream Barber – juuksurisalongi broneerimissüsteem
+**Stack:** Bun (backend) · React + MUI (frontend) · SQLite  
+**Avalik URL:** https://dreambarbers.onrender.com  
+**Admin:** https://dreambarbers.onrender.com/admin (admin / admin123)
 
-## Dream Barber – juuksurisalongi broneerimissüsteem (Bun + JS + SQLite)
+---
 
-Avalik URL: ("Placeholder")
-Admin: kasutaja admin, parool admin123
+## 1. Klient–server arhitektuur
+Rakendus kasutab selget klient–server mudelit:
 
-### Klient–server tööpõhimõte
-Süsteem kasutab klassikalist klient–server mudelit:
+- **Frontend (React + MUI)** kuvab kasutajale juuksurite valiku, ajad, broneerimisvormi ja saadab API kaudu päringuid backendile.
+- **Backend (Bun runtime)** pakub REST‑API lõpp‑punkte (`/api/...`), valideerib sisendi, kontrollib topeltbroneeringuid ja suhtleb SQLite andmebaasiga.
+- **Andmebaas (SQLite)** hoiab juuksureid ja broneeringuid. Kõik vastused tagastatakse JSON vormingus.
 
-Frontend (avalik veebileht) saadab päringuid JavaScripti abil REST‑API lõpp‑punktidesse (/api/hairdressers, /api/availability, /api/booking).
-Server (Bun runtime) töötleb need päringud, kontrollib andmeid, suhtleb SQLite andmebaasiga ning tagastab vastused JSON kujul.
-Kui kasutaja broneerib aja, teeb browser POST päringu serverisse, server valideerib sisendid, kontrollib vabu aegu, salvestab broneeringu ja tagastab vastuse, mille põhjal frontend kuvab kinnituse või vea.
+**Näide töövoost:**  
+kasutaja täidab vormi → frontend teeb POST `/api/bookings` → backend valideerib → salvestab andmebaasi → frontend kuvab kinnituse.
 
-Selline ülesehitus tagab selge liigenduse kasutajaliidese ja äriloogika vahel.
+---
 
-### Arhitektuur ja raamistikulaadne lähenemine
-Projekt kasutab Bun runtime’i ning modulaarset failistruktuuri, mis toimib nagu raamistikulaadne MVC arhitektuur:
+## 2. Kasutatud “raamistikulaadne” ülesehitus
+Kuigi Bun ei ole klassikaline raamistik, on projekt struktureeritud MVC‑loogika järgi:
 
-- controllers/ – API päringute käsitlemine (kontrolleri roll)
-- models/ – andmebaasi operatsioonid ja äriloogika (mudeli roll)
-- views/ / frontend/public – HTML, CSS, JS (vaate roll)
-- backend/server.js – serveri konfiguratsioon, routing ja päringute suunamine
-- config/ – konfiguratsioonid, muutujaid, seadistused
+- **models/** – andmebaasi päringud ja äriloogika  
+- **controllers/** – REST lõpp‑punktide kontrollerid  
+- **frontend/** – React vaated (UI)  
+- **server.js** – Bun HTTP server + routing  
+- **config/** – keskkonnamuutujad (`ADMIN_JWT_SECRET`, `PORT`)
 
-Selline jaotus vastab MVC põhimõtetele:
-vaade – frontend,
-mudel – SQLite‑l põhinev andmekiht,
-kontroller – päringute töötlemise funktsioonid.
+Selline jaotus hoiab koodi loetava, modulaarse ja hooldatavana.
 
-### Andmete liikumine ja töötlus
-Broneerimisel toimub järgmine töövoog:
+---
 
-1. Kasutaja valib juuksuri, kuupäeva, aja ning täidab kontaktandmed.
-2. Frontend teeb POST /api/booking.
-3. Backend kontrollib:
-	 - kas väljad on täidetud
-	 - kas aeg on formaadiliselt korrektne
-	 - kas aeg on tööaegade (09:00–17:00) vahel
-	 - kas sama juuksur pole juba samaks ajaks broneeritud
+## 3. Turvariskid ja rakendatud kaitsemeetmed
 
-Kui kõik on korras, salvestatakse broneering SQLite andmebaasi.
-Server tagastab vastuse, mida frontend kasutab kinnituse kuvamiseks.
+### **SQL Injection**
+- SQLite päringud kasutavad parametreid.  
+- Sisendid valideeritakse serveris.
 
-See protsess hõlmab andmete kogumist, valideerimist, äriloogikat ja otsustamist talletamise üle.
+### **XSS (cross‑site scripting)**
+- Backend saadab ainult JSON‑i.  
+- Frontend ei süsti kasutaja sisestatud HTML‑i DOM‑i.
 
-### Topeltbroneeringu vältimine (kohustuslik nõue)
-Süsteemis on kasutusel kaks taset topeltbroneeringute vältimiseks:
+### **Autoriseerimine (admin)**
+- Admin kasutab JWT tokenit (`ADMIN_JWT_SECRET`).  
+- Kaitstud API lõpp‑punktid nõuavad kehtivat Authorization päist.
 
-- Serveripoolne kontroll – enne salvestust kontrollitakse, kas sama juuksuri sama kuupäeva ja kellaaja kohta pole broneeringut.
-- SQLite UNIQUE piirang:
-	UNIQUE(hairdresser_id, date, start_time)
+### **Topeltbroneeringud**
+- Server kontrollib enne salvestust, kas aeg on vaba.
+- SQLite tasemel on `UNIQUE(hairdresser_id, date, time)` piirang.
 
-See tagab, et isegi samaaegsete päringute korral ei saa topeltbroneeringut salvestada.
+---
 
-Seega on nõue täidetud nii loogika kui andmebaasi tasandil.
+## 4. Koodistandard ja projektistruktuuri põhimõtted
+- Selged kaustad: **controllers**, **models**, **config**, **frontend**  
+- Korduvkasutatavad funktsioonid: valideerimine, päringud  
+- Ühtne stiil React komponendis (MUI komponendid)  
+- Frontend ja backend on rangelt eraldatud ning suhtlevad REST API kaudu  
+- Selge build‑protsess: React → build, Bun → server
 
-### Admin-vaade ja turvalisus
-Admin laiendab tavakasutaja võimalusi:
+---
 
-- broneeringute nimekiri kuupäeva järgi
-- iga broneeringu detailid (juuksur, klient, telefon, email, lisainfo)
-- võimalus broneeringuid kustutada
-- eraldiseisev sisselogimine (admin / admin123)
-- API lõpp‑punktid on kaitstud tokeni või põhiloogika kaudu
+## 5. Deployment
+Projekt on üles laaditud **Renderisse**:
 
-Admin-liides on kaitstud volitamata ligipääsu eest ning vastab töö nõudmistele.
+- **Frontend:** React production build  
+- **Backend:** Bun (installitakse buildis render.yaml abil)  
+- **Keskkonnamuutujad:**
+  - `PORT=3001`
+  - `ADMIN_JWT_SECRET=<random-string>`
 
-### Turvariskid ja nende maandamine
-- **SQL injection**
+Rakendus on avalikult kasutatav — broneeringud toimivad ning admin saab neid hallata.
 
-	Päringud on parametreeritud ning sisendid valideeritud.
+---
 
-- **XSS (Cross-Site Scripting)**
+## 6. Lühike kokkuvõte
+Dream Barber on terviklik broneerimissüsteem, mis demonstreerib:
 
-	Server saadab JSON-i, frontend ei renderda ohtlikku HTML-i.
-	Kõik sisendväljad on serveris puhastatud.
+- korrektset klient–server arhitektuuri  
+- MVC‑stiilis rakenduse ülesehitust  
+- topeltbroneeringute vältimist (äriloogika + SQLite UNIQUE)  
+- turvalist admin‑paneeli JWT autentimisega  
+- React UI + Bun backend kombinatsiooni  
+- edukat deployment’i Renderisse  
 
-- **Autoriseerimata ligipääs**
-
-	Admin API nõuab sisse logimist.
-	Admin-vaade pole avalik.
-
-- **Topeltbroneeringud**
-
-	Lahendatud äriloogikas ja SQLite UNIQUE piiranguga.
-
-Kõik põhilised turvameetmed on õpiväljundite jaoks olemas.
-
-### Koodistandard ja projekti kvaliteet
-Projekt järgib ühtset ja loetavat koodipõhimõtet:
-
-- failid eraldi kaustades (controllers, models, backend, frontend)
-- korduvkasutatavad komponendid (valideerimine, mudelid)
-- funktsioonid ja muutujad selgete nimedega
-- HTML/CSS ühe stiiliga, kaasaegne disain
-- täielik lahusus frontend–backend rollide vahel
-
-Kood on järjepidev ja vastab kaasaegse JS/Bun projekti standarditele.
-
-# BookBarber – Juuksurisalongi broneerimissüsteem
-
-## Klient-server, backend/frontend
-Kasutaja suhtleb React-põhise veebiliidesega (frontend), mis saadab päringud Node.js/Express serverile (backend). Backend töötleb päringud, kontrollib ja salvestab andmed SQLite andmebaasi ning tagastab tulemuse frontendile.
-
-## Kasutatud raamistik
-Backend: Express (Node.js), Frontend: React + MUI. Express võimaldab kiiret REST API loomist, React võimaldab moodulipõhist, kaasaegset kasutajaliidest. MVC printsiip: controllers (päringud), models (andmed), views (React komponendid).
-
-## Turvalisuse riskid ja kaitsemeetmed
-
-## Koodistandard
-Projekt järgib järjepidevat failistruktuuri, selgeid nimesid ja kommentaare. Kogu kood on loetav, moodulipõhine ja vastab kaasaegsetele JavaScripti/Reacti parimatele praktikatele.
-
-## Käivitamine ja paigaldus
-1. Paigalda sõltuvused: `npm install` (juurkaustas ja frontend kaustas)
-2. Initsialiseeri andmebaas: `node backend/init-db.js`
-3. Loo admin: `node backend/create-admin.js admin admin123`
-4. Käivita backend: `npm run dev`
-5. Käivita frontend: `cd frontend && npm start`
+Süsteem on kasutatav nii tavakasutajale (broneerimine) kui administraatorile (halduspaneel).
