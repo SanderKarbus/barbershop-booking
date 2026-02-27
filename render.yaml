@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: barbershop-booking
+    runtime: node
+    plan: free
+    buildCommand: |
+      curl -fsSL https://bun.sh/install | bash
+      export PATH="/root/.bun/bin:$PATH"
+      cd frontend && npm install && npm run build && cd ..
+    startCommand: bun run bun_backend/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
